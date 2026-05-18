@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/player/video.min.js"></script>
+<script src="/player/videojs-http-source-selector.min.js"></script>
+    <title>RuTV Style IPTV Player</title>
+    <!-- HLS.js Кутубхонаси -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- FontAwesome (Профессионал иконкалар учун) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #0d0d0d;
+            color: #ffffff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ЧАП ТОМОН: Каналлар рўйхати (RuTV Неон услубида) */
+        .sidebar {
+            width: 350px;
+            background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%);
+            border-right: 2px solid #ef1a4a; /* RuTV ўзига хос малина/қизил ранги */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+        }
+        .sidebar-header {
+            padding: 20px;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            text-align: center;
+        }
+        .sidebar-header h3 {
+            font-size: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, #ef1a4a, #ff5e62);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        
+        /* Тезкор қидирув майдони */
+        .search-box {
+            padding: 10px 20px;
+            background-color: #141414;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .search-box input:focus {
+            border-color: #ef1a4a;
+            box-shadow: 0 0 10px rgba(239, 26, 74, 0.3);
+        }
+
+        .channel-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        /* Скроллбарни чиройли қилиш */
+        .channel-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .channel-list::-webkit-scrollbar-thumb {
+            background-color: #333;
+            border-radius: 4px;
+        }
+        .channel-list::-webkit-scrollbar-thumb:hover {
+            background-color: #ef1a4a;
+        }
+
+        /* Канал элементи */
+        .channel-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .channel-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(4px);
+        }
+        .channel-item.active {
+            background: linear-gradient(90deg, rgba(239, 26, 74, 0.2) 0%, rgba(0, 0, 0, 0) 100%);
+            border-left: 3px solid #ef1a4a;
+        }
+        .channel-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background-color: #111;
+            margin-right: 15px;
+            object-fit: contain;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .channel-logo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ef1a4a, #7b1fa2);
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .channel-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        .channel-name {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #e0e0e0;
+        }
+        .channel-item.active .channel-name {
+            color: #fff;
+        }
+        .channel-group {
+            font-size: 11px;
+            color: #777;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ЎНГ ТОМОН: Профессионал Плеер Майдони */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #070707;
+            position: relative;
+        }
+        
+        /* Видео контейнери */
+        .player-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: radial-gradient(circle, #1a1a1a 0%, #070707 100%);
+        }
+        .player-container {
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            background-color: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(239, 26, 74, 0.05);
+            position: relative;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Плеер остидаги маълумотлар панели */
+        .player-footer {
+            padding: 25px 40px;
+            background: #0f0f0f;
+            border-top: 1px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .current-meta {
+            display: flex;
+            align-items: center;
+        }
+        .current-icon {
+            font-size: 24px;
+            color: #ef1a4a;
+            margin-right: 15px;
+            animation: pulse 2s infinite;
+        }
+        .current-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .live-badge {
+            background-color: #ef1a4a;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 15px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(239, 26, 74, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- КАНАЛЛАР ТИЗИМИ (SIDEBAR) -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fa-solid fa-play-css current-icon"></i> UNMEDIA-TV PORTAL</h3>
+        </div>
+        <!-- Қидирув блоки -->
+        <div class="search-box">
+            <input type="text" id="searchChannel" placeholder="Канал номини ёзинг..." oninput="filterChannels()">
+        </div>
+        <div class="channel-list" id="channelList">
+            <!-- Каналлар JS орқали юкланади -->
+        </div>
+    </div>
+
+    <!-- ПЛЕЕР КОРПУСИ -->
+    <div class="main-content">
+        <div class="player-wrapper">
+            <div class="player-container">
+                <video id="videoPlayer" controls autoplay muted></video>
+            </div>
+        </div>
+        
+        <!-- Пастки чизиқ (Канал маълумоти) -->
+        <div class="player-footer">
+            <div class="current-meta">
+                <i class="fa-solid fa-circle-play current-icon"></i>
+                <div class="current-title" id="currentTrackTitle">Канал танланмади</div>
+                <div class="live-badge" id="liveStatus"><i class="fa-solid fa-satellite-dish"></i> ЭФИР</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Тўғриланган ва тозаланган M3U базаси
+        const rawM3uData = `#EXTM3U
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/Q4A6ci4.png",Киносемья [720x576]
+http://stream01.vnet.am/Kinosemya/mono.m3u8
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://mediabay.uz/images/logotypeSmall.png",Кинохит
+http://uztv.mediabay.uz/tv/Kinohit/tracks-v1a1/mono.m3u8
+#EXTINF:-1 ,Канал 1
+http://otv.wotom.net:4433/udp/238.1.1.139:1234
+#EXTINF:-1 ,Канал 2
+http://188.113.190.15/186/tracks-v1a1/index.m3u8
+#EXTINF:-1 ,Канал 3
+http://91.205.199.3/black/tracks-v1a1/mono.m3u8
+#EXTINF:-1 ,Канал 4
+http://94.232.104.237:8000/play/106/index.m3u8
+#EXTINF:-1 ,Канал 5
+http://otv.wotom.net:4433/udp/238.1.1.170:1234
+#EXTINF:-1 ,Канал 6
+http://92.242.110.52:9835/udp/238.1.8.3:1234
+#EXTINF:-1 ,Канал 7
+http://176.113.48.221:8986/123
+#EXTINF:-1 ,Канал 8
+https://bkm.beetv.kz/btv/live/hls/000000520.m3u8
+#EXTINF:-1 ,Канал 9
+http://otv.wotom.net:4433/udp/238.1.1.141:1234
+#EXTINF:-1 ,Канал 10
+http://188.113.190.15/22/tracks-v1a1/index.m3u8
+#EXTINF:-1 ,Sony Entertainment
+http://185.37.150.40:8092/Sony_enter/playlist.m3u8
+#EXTINF:-1 ,Канал 11
+http://91.205.199.3/red/index.m3u8
+#EXTINF:-1 ,Канал 12
+http://92.242.110.52:9835/udp/238.1.11.52:1234
+#EXTINF:-1 ,Канал 13
+http://176.113.48.221:8986/111
+#EXTINF:-1 ,Канал 14
+https://bkm.beetv.kz/btv/live/hls/000000213.m3u8
+#EXTINF:-1 ,Киносерия
+http://stream01.vnet.am/Kinoseriya/mono.m3u8
+#EXTINF:-1 ,Axn Sci-Fi
+http://185.37.150.40:8092/Axn_skyfi/playlist.m3u8
+#EXTINF:-1 ,Канал 16
+http://otv.wotom.net:4433/udp/238.1.1.138:1234
+#EXTINF:-1 ,Канал 17
+http://188.113.190.15/23/tracks-v1a1/index.m3u8
+#EXTINF:-1 ,Канал 18
+http://92.242.110.52:9835/udp/238.1.8.18:1234
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/a8ZBGBw.png",Amedia Hit [720x576]
+http://92.242.110.52:9835/udp/238.1.11.3:1234
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/a8ZBGBw.png",Amedia Hit [1920x1080]
+http://178.163.83.19:4022/udp/234.0.0.169:2000
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/UUjehw9.png",Amedia Premium [1920x1080]
+http://stream01.vnet.am/AmediaPremium/mono.m3u8
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/YdIHXOR.png",BOLT [1920x1080]
+http://194.28.155.235:81/udp/225.0.56.22:1234
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/scDKOLS.png",Bollywood HD [1920x1080]
+https://bkm.beetv.kz/btv/live/hls/000001419.m3u8
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/mDeTbaF.png",FAN [1920x1080]
+http://rr2.73mtv.org/~106f9711ce410c81bdb8151e157f4f1aaed/37475/hls/pl.m3u8
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/ZMsyjSr.png",Viju TV1000 [1920x1080]
+https://bkm.beetv.kz/btv/live/hls/000003747.m3u8
+#EXTINF:-1 group-title="Фильмы" tvg-logo="https://i.imgur.com/TMmyuzh.png",Viju TV1000 Action [1920x1080]
+https://bkm.beetv.kz/btv/live/hls/000003910.m3u8`;
+
+        let allChannels = [];
+
+        // M3U Паресер алгоритми
+        function parseM3u(data) {
+            const lines = data.split('\n');
+            const channels = [];
+            let currentChannel = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+
+                if (line.startsWith('#EXTINF:')) {
+                    currentChannel = { name: 'Канал', logo: '', group: 'Оқимий Тв', url: '' };
+                    
+                    const logoMatch = line.match(/tvg-logo="([^"]+)"/);
+                    if (logoMatch) currentChannel.logo = logoMatch[1];
+
+                    const groupMatch = line.match(/group-title="([^"]+)"/);
+                    if (groupMatch) currentChannel.group = groupMatch[1];
+
+                    const commaIndex = line.lastIndexOf(',');
+                    if (commaIndex !== -1) {
+                        let namePart = line.substring(commaIndex + 1).trim();
+                        if (namePart) currentChannel.name = namePart;
+                    }
+                } else if (line.startsWith('http://') || line.startsWith('https://')) {
+                    if (currentChannel) {
+                        currentChannel.url = line;
+                        channels.push(currentChannel);
+                        currentChannel = null;
+                    }
+                }
+            }
+            return channels;
+        }
+
+        // Экранга чиқариш (Рендер)
+        function renderChannels(channels) {
+            const container = document.getElementById('channelList');
+            if (!container) return; // Элемент мавжудлигини текшириш
+            container.innerHTML = '';
+
+            if(channels.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Канал топилмади</div>';
+                return;
+            }
+
+            channels.forEach((channel, index) => {
+                const item = document.createElement('div');
+                item.className = 'channel-item';
+                item.id = `ch-${index}`;
+                item.onclick = () => playChannel(channel, item);
+
+                let mediaIconHtml = channel.logo 
+                    ? `<img class="channel-logo" src="${channel.logo}" alt="Logo" onerror="this.style.display='none'; this.nextSibling.style.display='flex';">`
+                    : '';
+                let placeholderHtml = `<div class="channel-logo-placeholder" style="${channel.logo ? 'display:none;' : 'display:flex;'}">${channel.name.substring(0,2).toUpperCase()}</div>`;
+
+                item.innerHTML = `
+                    ${mediaIconHtml}
+                    ${placeholderHtml}
+                    <div class="channel-info">
+                        <div class="channel-name">${channel.name}</div>
+                        <div class="channel-group"><i class="fa-solid fa-tags"></i> ${channel.group}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Қидирув тизими (Поиск)
+        function filterChannels() {
+            const searchInput = document.getElementById('searchChannel');
+            if (!searchInput) return;
+            const query = searchInput.value.toLowerCase();
+            const filtered = allChannels.filter(channel => 
+                channel.name.toLowerCase().includes(query) || 
+                channel.group.toLowerCase().includes(query)
+            );
+            renderChannels(filtered);
+        }
+
+        // Плеер бошқаруви
+        let hls = null;
+        function playChannel(channel, element) {
+            const video = document.getElementById('videoPlayer');
+            const title = document.getElementById('currentTrackTitle');
+
+            if (!video) return;
+
+            document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            if (title) title.innerText = channel.name;
+
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+
+            // Ижро этиш тизими
+            if (channel.url.includes('.m3u8')) {
+                if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                    hls = new Hls();
+                    hls.loadSource(channel.url);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        video.play().catch(e => console.log("Ижро хатоси: ", e));
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = channel.url;
+                    video.addEventListener('loadedmetadata', function() {
+                        video.play().catch(e => console.log("Ижро хатоси: ", e));
+                    });
+                } else {
+                    // Агар Hls кутубхонаси юкланмаган бўлса, тўғридан-тўғри синаб кўради
+                    video.src = channel.url;
+                    video.play().catch(e => console.log("Ижро хатоси: ", e));
+                }
+            } else {
+                video.src = channel.url;
+                video.play().catch(e => console.log("Стрим хатоси: ", e));
+            }
+        }
+
+        // Саҳифа юклангандан сўнг скриптни ишга тушириш
+        document.addEventListener("DOMContentLoaded", function() {
+            allChannels = parseM3u(rawM3uData);
+            renderChannels(allChannels);
+
+            // Биринчи канални автоматик қўйиш
+            if (allChannels.length > 0) {
+                setTimeout(() => {
+                    const firstItem = document.querySelector('.channel-item');
+                    playChannel(allChannels[0], firstItem);
+                }, 500);
+            }
+        });
+</script>
+</body>
+</html>
