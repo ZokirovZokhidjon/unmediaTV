@@ -23,6 +23,43 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            position: relative;
+        }
+
+        /* МОБИЛ ХЕДЕР (Фақат телефон ва планшетлар учун) */
+        .mobile-header {
+            display: none;
+            width: 100%;
+            height: 60px;
+            background-color: #141414;
+            border-bottom: 2px solid #ef1a4a;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 20;
+        }
+        .mobile-logo {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, #ef1a4a, #ff5e62);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+        .menu-toggle-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .menu-toggle-btn:hover {
+            color: #ef1a4a;
         }
 
         /* ЧАП ТОМОН: Каналлар рўйхати */
@@ -33,7 +70,8 @@
             display: flex;
             flex-direction: column;
             box-shadow: 5px 0 25px rgba(0, 0, 0, 0.7);
-            z-index: 10;
+            z-index: 15;
+            transition: transform 0.3s ease;
         }
         .sidebar-header {
             padding: 20px;
@@ -173,7 +211,6 @@
             height: 100% !important;
             border-radius: 12px;
         }
-        /* Катта "Play" тугмасини чиройли ва неон қилиш */
         .video-js .vjs-big-play-button {
             background-color: rgba(239, 26, 74, 0.8) !important;
             border: 2px solid #ef1a4a !important;
@@ -191,13 +228,11 @@
             transform: scale(1.1);
             box-shadow: 0 0 30px #ff5e62 !important;
         }
-        /* Пастки бошқарув панели дизайни */
         .video-js .vjs-control-bar {
             background-color: rgba(10, 10, 10, 0.85) !important;
             backdrop-filter: blur(10px);
             height: 50px !important;
         }
-        /* Овоз ва бошқа юкланиш чизиқларини қизил қилиш */
         .video-js .vjs-play-progress, .video-js .vjs-volume-level {
             background-color: #ef1a4a !important;
         }
@@ -217,11 +252,13 @@
         .current-meta {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .current-icon {
             font-size: 24px;
             color: #ef1a4a;
-            margin-right: 15px;
+            margin-right: 5px;
             animation: pulse 2s infinite;
         }
         .current-title {
@@ -238,7 +275,6 @@
             font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-left: 15px;
             letter-spacing: 1px;
             box-shadow: 0 0 10px rgba(239, 26, 74, 0.5);
         }
@@ -248,19 +284,74 @@
             50% { opacity: 1; }
             100% { opacity: 0.6; }
         }
+
+        /* ЭКРАН ТУЗАТИШЛАРИ (MEDIA QUERIES) */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow: auto;
+            }
+            .mobile-header {
+                display: flex;
+            }
+            
+            /* Каналлар блокини мобилда яшириш (Чапдан сурилиб чиқадиган қилиш) */
+            .sidebar {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                height: calc(100vh - 60px);
+                width: 280px;
+                transform: translateX(-100%);
+                border-right: 2px solid #ef1a4a;
+                border-top: 1px solid #2a2a2a;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-header {
+                display: none; /* Мобилда шарт эмас */
+            }
+
+            /* Асосий қисмни мобилга мослаш */
+            .main-content {
+                margin-top: 60px;
+                height: calc(100vh - 60px);
+                width: 100%;
+            }
+            .player-wrapper {
+                padding: 10px;
+                background: #070707;
+            }
+            .player-container {
+                border-radius: 6px;
+            }
+            .player-footer {
+                padding: 15px 20px;
+            }
+            .current-title {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
+    <div class="mobile-header">
+        <div class="mobile-logo"><i class="fa-solid fa-play" style="color: #ef1a4a;"></i> UNMEDIA-TV</div>
+        <button class="menu-toggle-btn" onclick="toggleSidebar()">
+            <i class="fa-solid fa-bars" id="menuIcon"></i>
+        </button>
+    </div>
+
+    <div class="sidebar" id="sidebarMenu">
         <div class="sidebar-header">
             <h3><i class="fa-solid fa-play current-icon"></i> UNMEDIA-TV PORTAL</h3>
         </div>
         <div class="search-box">
             <input type="text" id="searchChannel" placeholder="Канал номини ёзинг..." oninput="filterChannels()">
         </div>
-        <div class="channel-list" id="channelList">
-            </div>
+        <div class="channel-list" id="channelList"></div>
     </div>
 
     <div class="main-content">
@@ -328,6 +419,19 @@ http://80.77.52.3/streams/media/tv1000action_720x576/index.m3u8`;
 
         let channels = [];
         let player;
+
+        // Мобил менюни очиб-ёпиш функцияси
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarMenu');
+            const menuIcon = document.getElementById('menuIcon');
+            sidebar.classList.toggle('open');
+            
+            if (sidebar.classList.contains('open')) {
+                menuIcon.className = 'fa-solid fa-xmark';
+            } else {
+                menuIcon.className = 'fa-solid fa-bars';
+            }
+        }
 
         // Плеерни саҳифа юкланганда ишга тушириш
         document.addEventListener("DOMContentLoaded", function() {
@@ -406,6 +510,11 @@ http://80.77.52.3/streams/media/tv1000action_720x576/index.m3u8`;
             if(element) element.classList.add('active');
 
             document.getElementById('currentTrackTitle').innerText = name;
+
+            // Мобилда канал танланганда сидбар менюни автоматик ёпиш
+            if(window.innerWidth <= 768) {
+                toggleSidebar();
+            }
 
             // Плеерга янги линкни бериш
             player.src({
