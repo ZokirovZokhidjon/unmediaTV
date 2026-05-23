@@ -2,44 +2,43 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UNMEDIA-TV | IPTV Portal</title>
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { background-color: #0d0d0d; color: #fff; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 350px; background: #141414; border-right: 2px solid #ef1a4a; display: flex; flex-direction: column; transition: 0.3s; }
-        .channel-list { flex: 1; overflow-y: auto; padding: 15px; }
-        .channel-item { display: flex; align-items: center; padding: 12px; cursor: pointer; border-bottom: 1px solid #222; }
+
+        /* Sidebar - Yon panel */
+        .sidebar { width: 320px; background: #141414; border-right: 2px solid #ef1a4a; display: flex; flex-direction: column; transition: 0.3s; }
+        .channel-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .channel-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #222; font-size: 14px; }
         .channel-item:hover { background: #222; }
         .channel-item.active { border-left: 4px solid #ef1a4a; background: #1f1a1d; }
+
+        /* Asosiy kontent */
         .main-content { flex: 1; display: flex; flex-direction: column; }
-        .player-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; }
+        .player-container { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; min-height: 250px; }
         .video-js { width: 100% !important; height: 100% !important; }
+
+        /* Mobil moslashuv */
         @media (max-width: 768px) {
-            .sidebar { position: fixed; height: 100%; z-index: 100; transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
+            body { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; height: 40vh; border-right: none; border-bottom: 2px solid #ef1a4a; }
+            .main-content { height: 60vh; }
         }
-.home a{
-    text-align: center;
-    text-decoration: solid;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    font-size: 16px;
-    color: gold;
-    text-shadow: 3px 5px 8px;
-}
+
+        .home { padding: 15px; text-align: center; }
+        .home a { color: gold; text-decoration: none; font-weight: bold; text-shadow: 0 0 5px gold; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar" id="sidebarMenu">
-        <div style="padding: 20px; font-weight: bold; color: #ef1a4a;">UNMEDIA-TV KANALLAR</div>
-        <div class="home">
-    <a href="index.html">Асосий сахифа</a>
-</div>
-        <input type="text" id="searchChannel" placeholder="Qidirish..." style="margin: 10px; padding: 10px; border-radius: 5px; border: none; background: #222; color: #fff;" oninput="filterChannels()">
+    <div class="sidebar">
+        <div style="padding: 20px; color: #ef1a4a; font-weight: bold;">UNMEDIA-TV</div>
+        <div class="home"><a href="index.html">Асосий саҳифа</a></div>
+        <input type="text" id="searchChannel" placeholder="Қидириш..." style="margin: 10px; padding: 10px; background: #222; color: #fff; border: none; border-radius: 5px;" oninput="filterChannels()">
         <div class="channel-list" id="channelList"></div>
     </div>
 
@@ -47,42 +46,17 @@
         <div class="player-container">
             <video id="videoPlayer" class="video-js vjs-big-play-centered" controls autoplay preload="auto"></video>
         </div>
-        <div style="padding: 20px; background: #141414; font-weight: bold;" id="currentTrackTitle">Kanal tanlang</div>
+        <div style="padding: 15px; background: #141414; font-size: 14px;" id="currentTrackTitle">Канaл танланг</div>
     </div>
 
     <script>
-        // M3U ma'lumotlari (Barcha kanallar shu yerda)
         const rawM3uData = `#EXTM3U
-#EXTINF:-1,Red
-https://a3285272783-s80718.cdn.ngenix.net/hls/CH_REDHD/video_1920x1080_avc1/playlist.m3u8
-#EXTINF:-1,Sci-Fi
-https://a3569457567-s70378.cdn.ngenix.net/sony_sci_fi/2/index.m3u8
-#EXTINF:-1,12 Канал (Омск)
-http://12channel.bonus-tv.ru/cdn/12channel/playlist_sdhigh.m3u8
-#EXTINF:-1,2x2
-https://zabava-htlive.cdn.ngenix.net/hls/CH_2X2/variant.m3u8
-#EXTINF:-1,Amedia Premium HD
-https://a3569457567-s70378.cdn.ngenix.net/amedia_premium_hd/2/index.m3u8
-#EXTINF:-1,Animal Planet HD
-http://93.84.115.174:10181/animalplanethd
-#EXTINF:-1,Bloomberg
-https://bloomberg.com/media-manifest/streams/us.m3u8
-#EXTINF:-1,Cartoon Network
-http://176.118.197.101/Cartoon_Network/index.m3u8
-#EXTINF:-1,Discovery Channel
-https://d24aqelmrau4kx.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-l1oas691aj7p2/WBTV_IT.m3u8
-#EXTINF:-1,Eurosport 1 HD
-http://178.134.1.158:8081/eurosport/index.m3u8
-#EXTINF:-1,Euronews
-https://stream8.cinerama.uz/1024/tracks-v1a1/mono.m3u8
-#EXTINF:-1,RU.TV
-https://bl.rutube.ru/livestream/b1eb8e90d7e636677b3eb73b4fcbb717/index.m3u8
-#EXTINF:-1,Setanta Sports 1
-https://stream8.cinerama.uz/1263/tracks-v1a1/mono.m3u8
-#EXTINF:-1,CNN International
-https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8
-#EXTINF:-1,National Geographic HD
-https://stream8.cinerama.uz/1041/tracks-v1a1/mono.m3u8`;
+        #EXTINF:-1 ,.Uzb
+https://telekarta-tv.ru/wp-content/uploads/uz.m3u
+#EXTINF:0,Брудні танці (1987)
+https://ashdi.vip/video29/1/new3/dirty_dancing_remastered_1987_3xukreng_sub.eng_bdrip_1080p_hurtom_14234/hls/1080/DauXi3CRleBCmA4=/index.m3u8
+#EXTINF:0,Придорожній клуб (1989)
+https://ashdi.vip/video29/2/new/road.house.1989.vinegar.syndrome.us.bdremux.1080putopia_167533/hls/1080/DauXi3CRleBCmA4=/index.m3u8`;
 
         let channels = [];
         const player = videojs('videoPlayer');
@@ -105,14 +79,11 @@ https://stream8.cinerama.uz/1041/tracks-v1a1/mono.m3u8`;
             arr.forEach(ch => {
                 const div = document.createElement('div');
                 div.className = 'channel-item';
-                div.innerHTML = `<div>${ch.name}</div>`;
+                div.innerText = ch.name;
                 div.onclick = () => {
                     player.src({src: ch.url, type: 'application/x-mpegURL'});
                     player.play();
                     document.getElementById('currentTrackTitle').innerText = ch.name;
-                    // Aktiflikni belgilash
-                    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-                    div.classList.add('active');
                 };
                 list.appendChild(div);
             });
