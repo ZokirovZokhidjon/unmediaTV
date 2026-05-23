@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNMEDIA-TV | IPTV Portal</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #0d0d0d; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 320px; background: #141414; border-right: 2px solid #ef1a4a; display: flex; flex-direction: column; }
+        .channel-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .channel-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #222; font-size: 14px; }
+        .channel-item:hover { background: #222; }
+        .channel-item.active { border-left: 4px solid #ef1a4a; background: #1f1a1d; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .player-container { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; }
+        .video-js { width: 100% !important; height: 100% !important; }
+        .home a{
+            text-align: center;
+            text-decoration: solid;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 16px;
+            color: gold;
+            margin: 50px;
+        }
+    </style>
+</head>
+<body>
+  
+    <div class="sidebar">
+        <div class="home">
+        <a href="index.html" class="btn">Асосий сахифа</a>
+        
+    </div>
+        <div style="padding: 15px; color: #ef1a4a; font-weight: bold;">UNMEDIA-TV</div>
+        <input type="text" id="searchChannel" placeholder="Қидириш..." style="margin: 10px; padding: 10px; background: #222; color: #fff; border: none; border-radius: 5px;" oninput="filterChannels()">
+        <div class="channel-list" id="channelList"></div>
+
+        
+    </div>
+ 
+    <div class="main-content">
+        <div class="player-container">
+            <video id="videoPlayer" class="video-js vjs-big-play-centered" controls autoplay preload="auto"></video>
+        </div>
+        <div style="padding: 15px; background: #141414;" id="currentTrackTitle">Канaл танланг</div>
+    </div>
+ 
+
+    <script>
+        // M3U ma'lumotlari shu yerga joylandi
+        const rawM3uData = `#EXTM3U
+#EXTINF:-1,O'zbekiston
+https://stream1.cinerama.uz/1001/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Yoshlar
+https://stream1.cinerama.uz/1002/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Toshkent
+https://stream1.cinerama.uz/1003/tracks-v1a1/mono.m3u8
+#EXTINF:-1,My5
+https://stream1.cinerama.uz/1012/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Milliy TV
+https://stream1.cinerama.uz/1014/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Zo'r-TV
+https://stream1.cinerama.uz/1016/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Sevimli
+https://stream1.cinerama.uz/1017/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Sport uz
+https://stream1.cinerama.uz/1004/tracks-v1a1/mono.m3u8
+#EXTINF:-1,Futbol TV
+https://stream2.cinerama.uz/1010/index.m3u8
+
+`;
+
+        function loadChannels() {
+            const lines = rawM3uData.split('\n');
+            const channelList = document.getElementById('channelList');
+            const player = videojs('videoPlayer');
+
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('#EXTINF')) {
+                    const name = lines[i].split(',')[1];
+                    const url = lines[i + 1];
+                    
+                    const div = document.createElement('div');
+                    div.className = 'channel-item';
+                    div.innerText = name;
+                    div.onclick = () => {
+                        document.getElementById('currentTrackTitle').innerText = name;
+                        player.src({ src: url, type: 'application/x-mpegURL' });
+                        player.play();
+                    };
+                    channelList.appendChild(div);
+                }
+            }
+        }
+
+        function filterChannels() {
+            const val = document.getElementById('searchChannel').value.toLowerCase();
+            document.querySelectorAll('.channel-item').forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(val) ? 'block' : 'none';
+            });
+        }
+
+        loadChannels();
+    </script>
+</body>
+</html>
