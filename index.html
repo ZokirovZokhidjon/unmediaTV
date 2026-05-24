@@ -1,3 +1,4 @@
+
  <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -370,7 +371,7 @@ box-shadow: 3px 5px 8px;
             <a href="tv.html">Дополнительный ТВ</a>
         </div> 
           <div class="uztv1Tv">
-            <a href="uz1tv.html " class="btn">ЎзбекТв</a>
+            <a href="uztv.html " class="btn">ЎзбекТв</a>
         </div> 
         <div class="search-box">
             <input type="text" id="searchChannel" placeholder="Канал номини ёзинг..." oninput="filterChannels()">
@@ -392,16 +393,23 @@ box-shadow: 3px 5px 8px;
                 <i class="fa-solid fa-circle-play current-icon"></i>
                 <div class="current-title" id="currentTrackTitle">Канал танланмади</div>
                 <div class="live-badge" id="liveStatus"><i class="fa-solid fa-satellite-dish"></i> ЭФИР</div>
-            </div>
+                     
         </div>
+                </div>
+                 
+        </div>
+        
     </div>
-
+  <div class="player-footer">
+            <div id="currentTrackTitle"> 
+        <button id="recBtn">ЗАПИС ҚИЛИШ</button>
+        </div>
     <script>
         // M3U Матнли Базаси
         const rawM3uData = `#EXTM3U
 # Создано: 2026-05-10 08:14:38
 #EXTINF:-1 group-title="MEDIABAY",AzTv
-https://st4.mediabay.uz/TRT_Avaz/tracks-v4a1/mono.m3u8?token=0e440b8ee11cca91663b63023ac22addb1d2e001-0377b5edc7b1ef143e708b0c545124da-1779617499-1779595899
+https://st4.mediabay.uz/TRT_Avaz/tracks-v4a1/mono.m3u8?token=d8eec0b5f9bbb08ff71abb5fe0c17994147e078f-88a46fb28ca7b39d9509e8e64e023e3f-1779639649-1779618049
 #EXTINF:-1 group-title="MEDIABAY",8tv.ru
 https://st4.mediabay.uz/8-kanal/tracks-v1a1/mono.m3u8?token=c26dd2c20403257c79c623154ee9906e406a77bb-0ce1dfb0d9501404ecdd85a40d6f59fa-1779617575-1779595975
 #EXTINF:-1 group-title="MEDIABAY",MuzTv
@@ -411,7 +419,7 @@ https://st3.mediabay.uz/ViasatH/tracks-v1a1/mono.m3u8?token=546f8138baa16bf015a7
 #EXTINF:-1 group-title="MEDIABAY",History
 https://st4.mediabay.uz/DiscoveryS/tracks-v2a1/mono.m3u8?token=bb4636c0df93347fd8157ec552d82114a27dba3f-32d8c3c05e68d8c6d93ec51219832d24-1779616678-1779595078
 #EXTINF:-1 group-title="MEDIABAY",Zo'r Tv
-https://st4.mediabay.uz/ZorSD/tracks-v2a1/mono.m3u8?token=ce68a92809c2f08c908162e6f502779bac1a8c77-b10b9e82807a31ed31d53b465613d02f-1779616523-1779594923#EXTINF:-1 group-title="MEDIABAY",Rodnoye kino
+https://st3.mediabay.uz/ZorSD/tracks-v2a1/mono.m3u8?token=e4c9b5abebf78c454f3bc3f01fa4e19e0621f8d3-121340b84269672b731d4227441e416c-1779639551-1779617951
 https://st4.mediabay.uz/Rodnoe/tracks-v2a1/mono.m3u8?token=2d7b67d2bdd9fc34e520b5de875230bbe89e5914-559e8045071eff82cebd11ff0133bb1e-1779616404-1779594804
 #EXTINF:-1 group-title="MEDIABAY",Surxondaryo
 #EXTM3U url-tvg="http://epg.one/epg.xml; http://uztv.su/uploads/channelsarch/channels.xml; https://epg.iptvx.one/epg_noarch.xml.gz; http://gabbarit.drm-play.com/epg_lite.xml.gz; http://epg.cdntv.online/lite.xml; http://epg.it999.ru/epg.xml.gz; http://iptv-content.rv77.pw/guide-lite.xml"
@@ -1281,6 +1289,31 @@ https://glb.bozztv.com/ssh101/kinotvua/tracks-v1a1/mono.m3u8`;
             parseM3u(rawM3uData);
             renderChannels(channels);
         });
+  // Запис функцияси
+        recBtn.onclick = () => {
+            const videoElement = document.querySelector('video');
+            if (recBtn.innerText === "ЗАПИС ҚИЛИШ") {
+                const stream = videoElement.captureStream ? videoElement.captureStream() : videoElement.mozCaptureStream();
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'record.webm';
+                    a.click();
+                };
+                mediaRecorder.start();
+                recBtn.innerText = "ТЎХТАТИШ";
+                recBtn.classList.add('recording');
+            } else {
+                mediaRecorder.stop();
+                recBtn.innerText = "ЗАПИС ҚИЛИШ";
+                recBtn.classList.remove('recording');
+            }
+        };
 
         // M3U матнини таҳлил қилиб массивга ўтказиш
         function parseM3u(data) {
